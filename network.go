@@ -1,10 +1,11 @@
 package network
 
 import (
-	utilexec "github.com/yi-ge/network/exec"
 	"net"
 	"strings"
 	"sync"
+
+	utilexec "github.com/yi-ge/network/exec"
 )
 
 // Interfaces .
