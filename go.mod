@@ -1,4 +1,4 @@
-module network
+module github.com/yi-ge/network
 
 go 1.13
 

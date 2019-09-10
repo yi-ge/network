@@ -1,7 +1,7 @@
 package network
 
 import (
-	utilexec "network/exec"
+	utilexec "github.com/yi-ge/network/exec"
 	"net"
 	"strings"
 	"sync"
