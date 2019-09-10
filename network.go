@@ -1,7 +1,7 @@
 package network
 
 import (
-	utilexec "go-utils/exec"
+	utilexec "network/exec"
 	"net"
 	"strings"
 	"sync"
