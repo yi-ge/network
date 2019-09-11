@@ -36,9 +36,12 @@ type Interface interface {
 	GetInterfacesList() ([]Interfaces, error)
 	EnableNetworkInterface(interfaceName string) error
 	DisabledNetworkInterface(interfaceName string) error
+	SetStaticIP(interfaceName string, addr string, mask string, gateway string) error
+	SetInterfaceUseDHCP(interfaceName string) error
+	SetDNS(interfaceName string, primaryAddr string, backAddr string) error
+	SetDNSUseDHCP(interfaceName string) error
 	ScanWIFI(wifiInterface ...string) (wifiList []Wifi, err error)
-	SetWifiProfile(ssid string, securityType string, wifiKey string, ssidBroadcast bool) (msg string, err error)
-	ConnectWifi(interfaceName string, name string, ssid string) (string, error)
+	ConnectWifi(interfaceName string, ssid string, password string, securityType string, broadcast bool) (string, error)
 	DisconnectWifi(interfaceName string) (string, error)
 }
 

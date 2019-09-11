@@ -159,3 +159,6 @@ func (runner *runner) DisabledNetworkInterfaceByIfconfig(interfaceName string) e
 	}
 	return nil
 }
+
+// 查看wifi对应设备名
+// networksetup -listallhardwareports

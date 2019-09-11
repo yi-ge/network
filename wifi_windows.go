@@ -33,7 +33,7 @@ const wifiProfileTemplate = `<WLANProfile xmlns="http://www.microsoft.com/networ
     <nonBroadcast>{{.IsSSIDBroadcast}}</nonBroadcast>
   </SSIDConfig>
   <connectionType>ESS</connectionType>
-  <connectionMode>manual</connectionMode>
+  <connectionMode>auto</connectionMode>
   <autoSwitch>false</autoSwitch>
   <MSM>
     <security>

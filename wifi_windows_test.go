@@ -6,11 +6,9 @@ import (
 
 func TestSetWifiProfile(t *testing.T) {
 	networkInterface := New(nil)
-	msg, err := networkInterface.SetWifiProfile("ProjectX", "WPA", "nideshengri", true)
+	msg, err := networkInterface.ConnectWifi("WLAN 2", "ProjectX", "nideshengri", "WPA", true)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(msg)
-
-	networkInterface.ConnectWifi("WLAN 2", "ProjectX", "ProjectX")
 }

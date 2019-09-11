@@ -168,7 +168,17 @@ func (runner *runner) getNetworkInterfaceDriversInfo(interfaceName string) (stri
 	return string(out[:]), nil
 }
 
-func (runner *runner) ConnectWifi(interfaceName string, name string, ssid string) (string, error) {
+func (runner *runner) ConnectWifi(interfaceName string, ssid string, password string, securityType string, broadcast bool) (string, error) {
+	msg, err := runner.SetWifiProfile(ssid, securityType, password, broadcast)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(msg, "err") {
+		return "", errors.New(msg)
+	}
+
+	name := ssid
 	args := []string{
 		"wlan",
 		"connect",
