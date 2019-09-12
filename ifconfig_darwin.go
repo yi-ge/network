@@ -140,8 +140,8 @@ func parseIfconfig(str string) []IfconfigInterfaces {
 	return IfconfigInterfacesList
 }
 
-// EnableNetworkInterfaceByIfconfig .
-func (runner *runner) EnableNetworkInterfaceByIfconfig(interfaceName string) error {
+// EnabledNetworkInterfaceByIfconfig .
+func (runner *runner) EnabledNetworkInterfaceByIfconfig(interfaceName string) error {
 	command := "ifconfig " + interfaceName + " up"
 	_, err := runner.exec.Command(command).CombinedOutput()
 	if err != nil {
@@ -150,8 +150,8 @@ func (runner *runner) EnableNetworkInterfaceByIfconfig(interfaceName string) err
 	return nil
 }
 
-// DisabledNetworkInterfaceByIfconfig .
-func (runner *runner) DisabledNetworkInterfaceByIfconfig(interfaceName string) error {
+// DisableNetworkInterfaceByIfconfig .
+func (runner *runner) DisableNetworkInterfaceByIfconfig(interfaceName string) error {
 	command := "ifconfig " + interfaceName + " down"
 	_, err := runner.exec.Command(command).CombinedOutput()
 	if err != nil {
@@ -159,3 +159,6 @@ func (runner *runner) DisabledNetworkInterfaceByIfconfig(interfaceName string) e
 	}
 	return nil
 }
+
+// 查看wifi对应设备名
+// networksetup -listallhardwareports

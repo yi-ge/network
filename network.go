@@ -34,11 +34,14 @@ type runner struct {
 // Interface .
 type Interface interface {
 	GetInterfacesList() ([]Interfaces, error)
-	EnableNetworkInterface(interfaceName string) error
-	DisabledNetworkInterface(interfaceName string) error
+	EnabledNetworkInterface(interfaceName string) error
+	DisableNetworkInterface(interfaceName string) error
+	SetStaticIP(interfaceName string, addr string, mask string, gateway string) error
+	SetInterfaceUseDHCP(interfaceName string) error
+	SetDNS(interfaceName string, primaryAddr string, backAddr string) error
+	SetDNSUseDHCP(interfaceName string) error
 	ScanWIFI(wifiInterface ...string) (wifiList []Wifi, err error)
-	SetWifiProfile(ssid string, securityType string, wifiKey string, ssidBroadcast bool) (msg string, err error)
-	ConnectWifi(interfaceName string, name string, ssid string) (string, error)
+	ConnectWifi(interfaceName string, ssid string, password string, securityType string, broadcast bool) (string, error)
 	DisconnectWifi(interfaceName string) (string, error)
 }
 
@@ -76,7 +79,7 @@ func (runner *runner) GetInterfacesList() ([]Interfaces, error) {
 				if ip, ok := addr.(*net.IPNet); ok && !ip.IP.IsLoopback() {
 					if ip.IP.To4() != nil {
 						interfacesOut.IPv4Address = ip.IP.String()
-						interfacesOut.SubnetPrefix = ip.Mask.String()
+						interfacesOut.SubnetPrefix = hex2dot(ip.Mask.String())
 					}
 				}
 			}

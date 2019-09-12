@@ -3,6 +3,8 @@ package network
 import (
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/axgle/mahonia"
 )
@@ -32,4 +34,30 @@ func SmartPrint(i interface{}) {
 		fmt.Print(v)
 		fmt.Println()
 	}
+}
+
+func hex2dot(value string) string {
+	var err error
+
+	value = strings.Replace(value, "0x", "", -1)
+	ipInt := []int64{0, 0, 0, 0}
+	ipStr := []string{"", "", "", ""}
+
+	ipInt[0], err = strconv.ParseInt(value[0:2], 16, 64)
+	ipStr[0] = strconv.FormatInt(ipInt[0], 10)
+
+	ipInt[1], err = strconv.ParseInt(value[2:4], 16, 64)
+	ipStr[1] = strconv.FormatInt(ipInt[1], 10)
+
+	ipInt[2], err = strconv.ParseInt(value[4:6], 16, 64)
+	ipStr[2] = strconv.FormatInt(ipInt[2], 10)
+
+	ipInt[3], err = strconv.ParseInt(value[6:8], 16, 64)
+	ipStr[3] = strconv.FormatInt(ipInt[3], 10)
+
+	if err != nil {
+		return ""
+	}
+
+	return strings.Join(ipStr, ".")
 }

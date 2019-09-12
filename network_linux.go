@@ -6,12 +6,12 @@ func getDefaultGateway(interfaceName string) string {
 	return command
 }
 
-// EnableNetworkInterface .
-func (runner *runner) EnableNetworkInterface(interfaceName string) error {
-	return runner.EnableNetworkInterfaceByIfconfig(interfaceName)
+// EnabledNetworkInterface .
+func (runner *runner) EnabledNetworkInterface(interfaceName string) error {
+	return runner.EnabledNetworkInterfaceByIfconfig(interfaceName)
 }
 
-// DisabledNetworkInterface .
-func (runner *runner) DisabledNetworkInterface(interfaceName string) error {
-	return runner.DisabledNetworkInterfaceByIfconfig(interfaceName)
+// DisableNetworkInterface .
+func (runner *runner) DisableNetworkInterface(interfaceName string) error {
+	return runner.DisableNetworkInterfaceByIfconfig(interfaceName)
 }

@@ -63,7 +63,7 @@ func (runner *runner) getNetworkInterfaceStatus() (map[string]InterfaceStatus, e
 	return indexMap, nil
 }
 
-func (runner *runner) enableNetworkInterfaceByNetsh(interfaceName string) error {
+func (runner *runner) EnableNetworkInterfaceByNetsh(interfaceName string) error {
 	args := []string{
 		"interface", "set", "interface", "name=\"" + interfaceName + "\"", "enabled",
 	}
@@ -76,7 +76,7 @@ func (runner *runner) enableNetworkInterfaceByNetsh(interfaceName string) error 
 	return nil
 }
 
-func (runner *runner) disabledNetworkInterfaceByNetsh(interfaceName string) error {
+func (runner *runner) DisableNetworkInterfaceByNetsh(interfaceName string) error {
 	args := []string{
 		"interface", "set", "interface", "name=\"" + interfaceName + "\"", "disabled",
 	}
@@ -168,7 +168,17 @@ func (runner *runner) getNetworkInterfaceDriversInfo(interfaceName string) (stri
 	return string(out[:]), nil
 }
 
-func (runner *runner) ConnectWifi(interfaceName string, name string, ssid string) (string, error) {
+func (runner *runner) ConnectWifi(interfaceName string, ssid string, password string, securityType string, broadcast bool) (string, error) {
+	msg, err := runner.SetWifiProfile(ssid, securityType, password, broadcast)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(msg, "err") {
+		return "", errors.New(msg)
+	}
+
+	name := ssid
 	args := []string{
 		"wlan",
 		"connect",
