@@ -79,7 +79,7 @@ func (runner *runner) GetInterfacesList() ([]Interfaces, error) {
 				if ip, ok := addr.(*net.IPNet); ok && !ip.IP.IsLoopback() {
 					if ip.IP.To4() != nil {
 						interfacesOut.IPv4Address = ip.IP.String()
-						interfacesOut.SubnetPrefix = ip.Mask.String()
+						interfacesOut.SubnetPrefix = hex2dot(ip.Mask.String())
 					}
 				}
 			}
