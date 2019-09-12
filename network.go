@@ -34,8 +34,8 @@ type runner struct {
 // Interface .
 type Interface interface {
 	GetInterfacesList() ([]Interfaces, error)
-	EnableNetworkInterface(interfaceName string) error
-	DisabledNetworkInterface(interfaceName string) error
+	EnabledNetworkInterface(interfaceName string) error
+	DisableNetworkInterface(interfaceName string) error
 	SetStaticIP(interfaceName string, addr string, mask string, gateway string) error
 	SetInterfaceUseDHCP(interfaceName string) error
 	SetDNS(interfaceName string, primaryAddr string, backAddr string) error

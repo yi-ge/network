@@ -63,7 +63,7 @@ func (runner *runner) getNetworkInterfaceStatus() (map[string]InterfaceStatus, e
 	return indexMap, nil
 }
 
-func (runner *runner) enableNetworkInterfaceByNetsh(interfaceName string) error {
+func (runner *runner) EnableNetworkInterfaceByNetsh(interfaceName string) error {
 	args := []string{
 		"interface", "set", "interface", "name=\"" + interfaceName + "\"", "enabled",
 	}
@@ -76,7 +76,7 @@ func (runner *runner) enableNetworkInterfaceByNetsh(interfaceName string) error 
 	return nil
 }
 
-func (runner *runner) disabledNetworkInterfaceByNetsh(interfaceName string) error {
+func (runner *runner) DisableNetworkInterfaceByNetsh(interfaceName string) error {
 	args := []string{
 		"interface", "set", "interface", "name=\"" + interfaceName + "\"", "disabled",
 	}

@@ -68,12 +68,12 @@ func (runner *runner) parseInterfaceStatus(ipconfigInterfacesList []IpconfigInte
 	return ipconfigInterfacesList
 }
 
-func (runner *runner) EnableNetworkInterface(interfaceName string) error {
-	return runner.enableNetworkInterfaceByNetsh(interfaceName)
+func (runner *runner) EnabledNetworkInterface(interfaceName string) error {
+	return runner.EnableNetworkInterfaceByNetsh(interfaceName)
 }
 
-func (runner *runner) DisabledNetworkInterface(interfaceName string) error {
-	return runner.disabledNetworkInterfaceByNetsh(interfaceName)
+func (runner *runner) DisableNetworkInterface(interfaceName string) error {
+	return runner.DisableNetworkInterfaceByNetsh(interfaceName)
 }
 
 func (runner *runner) SetStaticIP(interfaceName string, addr string, mask string, gateway string) error {
