@@ -4,7 +4,6 @@ package network
 
 import (
 	"bytes"
-	"fmt"
 	"runtime"
 	"strconv"
 	"strings"
@@ -57,13 +56,13 @@ func (runner *runner) scan(wifiInterface ...string) (wifiList []Wifi, err error)
 		command = "netsh wlan show networks interface=\"" + wifiInterface[0] + "\" mode=Bssid"
 	case "darwin":
 		os = "darwin"
-		command = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s"
+		command = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport \"" + wifiInterface[0] + "\" -s"
 	default:
 		os = "linux"
-		command = "iwlist wlan0 scan"
-		if len(wifiInterface) > 0 && len(wifiInterface[0]) > 0 {
-			command = fmt.Sprintf("iwlist %s scan", wifiInterface[0])
-		}
+		command = "iwlist \"" + wifiInterface[0] + "\" scan"
+		// if len(wifiInterface) > 0 && len(wifiInterface[0]) > 0 {
+		// 	command = fmt.Sprintf("iwlist %s scan", wifiInterface[0])
+		// }
 	}
 	stdout, _, err := runner.runCommand(TimeLimit, command)
 	if err != nil {
