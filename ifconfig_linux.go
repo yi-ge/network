@@ -1,8 +1,8 @@
 package network
 
 import (
+	"bufio"
 	"os/exec"
-	"regexp"
 	"strings"
 )
 
@@ -34,7 +34,7 @@ func IsInstalled() bool {
 
 // getIfconfigOutPut .
 func (runner *runner) getIfconfigOutPut() (string, error) {
-	out, err := runner.exec.Command("ifconfig -a").CombinedOutput()
+	out, err := runner.exec.Command("ifconfig", "-a").CombinedOutput()
 
 	if err != nil {
 		return "", err
@@ -43,98 +43,89 @@ func (runner *runner) getIfconfigOutPut() (string, error) {
 	return string(out[:]), nil
 }
 
-// minIndexAndCardType .
-func minIndexAndCardType(x []int, xType *regexp.Regexp, y []int, yType *regexp.Regexp) (int, *regexp.Regexp, string) {
-	if len(x) != 0 && len(y) != 0 && x[1] < y[1] {
-		return x[1], xType, "Wired"
-	} else if len(x) != 0 && len(y) != 0 && x[1] > y[1] {
-		return y[1], yType, "Wi-Fi"
-	} else if len(x) != 0 && len(y) == 0 {
-		return x[1], xType, "Wired"
-	} else if len(x) == 0 && len(y) != 0 {
-		return y[1], yType, "Wi-Fi"
-	}
-
-	return 0, nil, ""
-}
-
 func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
-	repEthernet := regexp.MustCompile(`\bEthernet adapter ([^:\r\n]+):`) // 判断有线网卡
-	repWireless := regexp.MustCompile(`\bWi-Fi adapter ([^:\r\n]+):`)    // 判断无线网卡
-	repItem := regexp.MustCompile(`(?m)^\s*$[\r\n]*|[\r\n]+\s+\z`)       // 判断空行
-
 	var (
 		IfconfigInterfacesList []IfconfigInterfaces
 		currentInterface       IfconfigInterfaces
-		inDNSPrimary           = false
 	)
 
 	output := str
+	currentInterface = IfconfigInterfaces{}
+	scanner := bufio.NewScanner(strings.NewReader(output))
 
-	cardIndex, cardType, typeName := minIndexAndCardType(repEthernet.FindStringSubmatchIndex(output), repEthernet, repWireless.FindStringSubmatchIndex(output), repWireless)
-	for cardIndex != 0 {
-		card := cardType.FindStringSubmatch(output)
-
-		currentInterface = IfconfigInterfaces{
-			Name: card[1],
-		}
-		output = output[cardIndex+4:]
-		itemOutIndex := repItem.FindStringSubmatchIndex(output)
-		itemOut := output[:itemOutIndex[1]]
-		output = output[itemOutIndex[1]:]
-
-		outputLines := strings.Split(itemOut, "\r\n")
-
-		for _, outputLine := range outputLines {
-			parts := strings.SplitN(outputLine, ":", 2)
-			if len(parts) != 2 {
-				if inDNSPrimary {
-					currentInterface.DNSBack = strings.TrimSpace(outputLine)
-					inDNSPrimary = false
-				}
-				continue
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "flags=") {
+			if currentInterface.Name != "" {
+				IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
+				currentInterface = IfconfigInterfaces{}
 			}
-			if inDNSPrimary {
-				inDNSPrimary = false
+
+			fs := strings.Split(line, ":")
+			currentInterface.Name = fs[0]
+		} else if strings.Contains(line, "ether") {
+			fs := strings.Fields(line)
+			value := fs[1]
+			currentInterface.HardwareAddr = strings.ToUpper(strings.Replace(value, "-", ":", -1))
+		} else if strings.Contains(line, "inet") && !strings.Contains(line, "inet6") {
+			fs := strings.Fields(line)
+			currentInterface.IPv4Address = fs[1]
+			if len(fs) > 3 {
+				currentInterface.SubnetPrefix = hex2dot(fs[3])
 			}
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			if strings.HasPrefix(key, "Physical Address") {
-				currentInterface.HardwareAddr = strings.ToUpper(strings.Replace(value, "-", ":", -1))
-			} else if strings.HasPrefix(key, "DHCP enabled") {
-				if value == "Yes" {
-					currentInterface.DHCPEnabled = true
-				}
-			} else if strings.HasPrefix(key, "IPv4 Address") || strings.HasPrefix(key, "IP Address") {
-				currentInterface.IPv4Address = strings.Replace(value, "(Preferred)", "", -1)
-			} else if strings.HasPrefix(key, "Subnet Prefix") || strings.HasPrefix(key, "Subnet Mask") {
-				currentInterface.SubnetPrefix = value
-			} else if strings.HasPrefix(key, "Default Gateway") {
-				currentInterface.DefaultGatewayAddress = value
-			} else if strings.HasPrefix(key, "DNS Servers") {
-				currentInterface.DNSPrimary = value
-				inDNSPrimary = true
-			} else if strings.HasPrefix(key, "Description") {
-				currentInterface.Description = value
-			} else if strings.HasPrefix(key, "Media State") {
-				if strings.Contains(value, "disconnected") {
-					currentInterface.Connected = false
-				} else {
-					currentInterface.Connected = true
-				}
+			if len(fs) > 5 {
+				currentInterface.DefaultGatewayAddress = fs[5]
+			}
+		} else if strings.Contains(line, "status:") {
+			if strings.Contains(line, "inactive") {
+				currentInterface.Connected = false
+				currentInterface.AdminState = "Disabled"
+			} else {
+				currentInterface.Connected = true
+				currentInterface.AdminState = "Enable"
 			}
 		}
+	}
 
-		if !strings.Contains(itemOut, "Media State") {
-			currentInterface.Connected = true
+	if currentInterface.Name != "" {
+		IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
+	}
+
+	for index, ifconfigInterfaces := range IfconfigInterfacesList {
+		theType := "Wired"
+		if strings.Contains(ifconfigInterfaces.Name, "wlan") {
+			theType = "Wi-Fi"
 		}
 
-		currentInterface.Type = typeName
-
-		if currentInterface != (IfconfigInterfaces{}) {
-			IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
+		interfaceTypeList, err := runner.getIwconfig()
+		if err == nil {
+			for _, interfaceType := range interfaceTypeList {
+				if ifconfigInterfaces.Name == interfaceType.Name {
+					IfconfigInterfacesList[index].Type = interfaceType.Type
+				}
+			}
 		}
-		cardIndex, cardType, typeName = minIndexAndCardType(repEthernet.FindStringSubmatchIndex(output), repEthernet, repWireless.FindStringSubmatchIndex(output), repWireless)
+
+		if IfconfigInterfacesList[index].Type == "Wi-Fi" {
+			IfconfigInterfacesList[index].Description = "WIFI"
+		}
+
+		if strings.Contains(ifconfigInterfaces.Name, "eth") {
+			IfconfigInterfacesList[index].Description = "Wired Ethernet"
+		}
+
+		interfaceConnectedList, err := runner.getInterfaceConnected()
+		if err == nil {
+			for _, interfaceConnected := range interfaceConnectedList {
+				if ifconfigInterfaces.Name == interfaceConnected.Name {
+					IfconfigInterfacesList[index].Connected = interfaceConnected.Connected
+				}
+			}
+		}
+
+		IfconfigInterfacesList[index].Type = theType
+		IfconfigInterfacesList[index].Mode = "Dedicated"
+		IfconfigInterfacesList[index].AdminState = "Enabled"
 	}
 
 	return IfconfigInterfacesList
