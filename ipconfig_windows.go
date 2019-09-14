@@ -10,7 +10,7 @@ import (
 type IpconfigInterfaces struct {
 	Name                  string // e.g., "en0", "lo0", "eth0.100"
 	HardwareAddr          string // IEEE MAC-48, EUI-48 and EUI-64 form
-	Type                  string // Ethernet, Wireless LAN
+	Type                  string // Wired, Wi-Fi
 	DHCPEnabled           bool
 	IPv4Address           string
 	SubnetPrefix          string
@@ -47,13 +47,13 @@ func (runner *runner) getIpconfigOutPut() (string, error) {
 // minIndexAndCardType .
 func minIndexAndCardType(x []int, xType *regexp.Regexp, y []int, yType *regexp.Regexp) (int, *regexp.Regexp, string) {
 	if len(x) != 0 && len(y) != 0 && x[1] < y[1] {
-		return x[1], xType, "Ethernet"
+		return x[1], xType, "Wired"
 	} else if len(x) != 0 && len(y) != 0 && x[1] > y[1] {
-		return y[1], yType, "Wireless LAN"
+		return y[1], yType, "Wi-Fi"
 	} else if len(x) != 0 && len(y) == 0 {
-		return x[1], xType, "Ethernet"
+		return x[1], xType, "Wired"
 	} else if len(x) == 0 && len(y) != 0 {
-		return y[1], yType, "Wireless LAN"
+		return y[1], yType, "Wi-Fi"
 	}
 
 	return 0, nil, ""

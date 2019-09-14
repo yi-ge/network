@@ -225,7 +225,7 @@ func parseLinux(output string) (wifiList []Wifi, err error) {
 
 		if strings.Contains(line, "Address") {
 			fs := strings.Split(line, ":")
-			bssid := strings.TrimSpace(strings.ToLower(fs[2]))
+			bssid := strings.TrimSpace(strings.ToLower(fs[1]))
 			line = scanner.Text()
 			if strings.Contains(line, "ESSID") {
 				if channelInfo.BSSID != "" {
@@ -249,7 +249,7 @@ func parseLinux(output string) (wifiList []Wifi, err error) {
 			}
 		} else if strings.Contains(line, "Mode") {
 			fs := strings.Split(line, ":")
-			if fs[2] == "Managed" {
+			if fs[1] == "Managed" {
 				w.NetworkType = "Infrastructure"
 			} else {
 				w.NetworkType = fs[2]
@@ -268,7 +268,7 @@ func parseLinux(output string) (wifiList []Wifi, err error) {
 			}
 		} else if strings.Contains(line, "Encryption key") {
 			fs := strings.Split(line, ":")
-			if fs[2] == "off" {
+			if fs[1] == "off" {
 				w.Encryption = "None"
 				w.Authentication = "None"
 			}
@@ -288,7 +288,7 @@ func parseLinux(output string) (wifiList []Wifi, err error) {
 		} else if strings.Contains(line, "Frequency=2") {
 			channelInfo.RadioType = "802.11n"
 		} else if strings.Contains(line, "(Channel") {
-			channelInfo.Channel = strings.TrimSpace(strings.Replace(strings.Split(line, "(Channel")[2], ")", "", -1))
+			channelInfo.Channel = strings.TrimSpace(strings.Replace(strings.Split(line, "(Channel")[1], ")", "", -1))
 		}
 	}
 

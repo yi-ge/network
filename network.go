@@ -12,14 +12,14 @@ import (
 type Interfaces struct {
 	Name                  string // e.g., "en0", "lo0", "eth0.100"
 	HardwareAddr          string // IEEE MAC-48, EUI-48 and EUI-64 form
-	Type                  string // Ethernet, Wireless LAN
+	Type                  string // Wired, Wi-Fi
 	DHCPEnabled           bool
 	IPv4Address           string
 	SubnetPrefix          string
 	DefaultGatewayAddress string
 	DNSPrimary            string
 	DNSBack               string
-	Description           string
+	Description           string // In mac is HardwarePort, other is net card name
 	Connected             bool
 	Mode                  string
 	AdminState            string

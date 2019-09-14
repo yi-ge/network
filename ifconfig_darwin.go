@@ -1,8 +1,8 @@
 package network
 
 import (
+	"bufio"
 	"os/exec"
-	"regexp"
 	"strings"
 )
 
@@ -10,14 +10,14 @@ import (
 type IfconfigInterfaces struct {
 	Name                  string // e.g., "en0", "lo0", "eth0.100"
 	HardwareAddr          string // IEEE MAC-48, EUI-48 and EUI-64 form
-	Type                  string // Ethernet, Wireless LAN
+	Type                  string // Wired, Wi-Fi
 	DHCPEnabled           bool
 	IPv4Address           string
 	SubnetPrefix          string
 	DefaultGatewayAddress string
 	DNSPrimary            string
 	DNSBack               string
-	Description           string
+	Description           string // In mac is HardwarePort, other is net card name
 	Connected             bool
 	Mode                  string
 	AdminState            string
@@ -34,7 +34,7 @@ func IsInstalled() bool {
 
 // getIfconfigOutPut .
 func (runner *runner) getIfconfigOutPut() (string, error) {
-	out, err := runner.exec.Command("ifconfig -a").CombinedOutput()
+	out, err := runner.exec.Command("ifconfig", "-a").CombinedOutput()
 
 	if err != nil {
 		return "", err
@@ -43,98 +43,78 @@ func (runner *runner) getIfconfigOutPut() (string, error) {
 	return string(out[:]), nil
 }
 
-// minIndexAndCardType .
-func minIndexAndCardType(x []int, xType *regexp.Regexp, y []int, yType *regexp.Regexp) (int, *regexp.Regexp, string) {
-	if len(x) != 0 && len(y) != 0 && x[1] < y[1] {
-		return x[1], xType, "Ethernet"
-	} else if len(x) != 0 && len(y) != 0 && x[1] > y[1] {
-		return y[1], yType, "Wireless LAN"
-	} else if len(x) != 0 && len(y) == 0 {
-		return x[1], xType, "Ethernet"
-	} else if len(x) == 0 && len(y) != 0 {
-		return y[1], yType, "Wireless LAN"
-	}
-
-	return 0, nil, ""
-}
-
-func parseIfconfig(str string) []IfconfigInterfaces {
-	repEthernet := regexp.MustCompile(`\bEthernet adapter ([^:\r\n]+):`)     // 判断有线网卡
-	repWireless := regexp.MustCompile(`\bWireless LAN adapter ([^:\r\n]+):`) // 判断无线网卡
-	repItem := regexp.MustCompile(`(?m)^\s*$[\r\n]*|[\r\n]+\s+\z`)           // 判断空行
-
+func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 	var (
 		IfconfigInterfacesList []IfconfigInterfaces
 		currentInterface       IfconfigInterfaces
-		inDNSPrimary           = false
 	)
 
 	output := str
+	currentInterface = IfconfigInterfaces{}
+	scanner := bufio.NewScanner(strings.NewReader(output))
 
-	cardIndex, cardType, typeName := minIndexAndCardType(repEthernet.FindStringSubmatchIndex(output), repEthernet, repWireless.FindStringSubmatchIndex(output), repWireless)
-	for cardIndex != 0 {
-		card := cardType.FindStringSubmatch(output)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "flags=") {
+			if currentInterface.Name != "" {
+				IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
+				currentInterface = IfconfigInterfaces{}
+			}
 
-		currentInterface = IfconfigInterfaces{
-			Name: card[1],
+			fs := strings.Split(line, ":")
+			currentInterface.Name = fs[0]
+		} else if strings.Contains(line, "ether") {
+			fs := strings.Fields(line)
+			value := fs[1]
+			currentInterface.HardwareAddr = strings.ToUpper(strings.Replace(value, "-", ":", -1))
+		} else if strings.Contains(line, "inet") && !strings.Contains(line, "inet6") {
+			fs := strings.Fields(line)
+			currentInterface.IPv4Address = fs[1]
+			if len(fs) > 3 {
+				currentInterface.SubnetPrefix = hex2dot(fs[3])
+			}
+			if len(fs) > 5 {
+				currentInterface.DefaultGatewayAddress = fs[5]
+			}
+		} else if strings.Contains(line, "status:") {
+			if strings.Contains(line, "inactive") {
+				currentInterface.Connected = false
+				currentInterface.AdminState = "Disabled"
+			} else {
+				currentInterface.Connected = true
+				currentInterface.AdminState = "Enable"
+			}
 		}
-		output = output[cardIndex+4:]
-		itemOutIndex := repItem.FindStringSubmatchIndex(output)
-		itemOut := output[:itemOutIndex[1]]
-		output = output[itemOutIndex[1]:]
+	}
 
-		outputLines := strings.Split(itemOut, "\r\n")
+	currentInterface.Type = "Wired"
 
-		for _, outputLine := range outputLines {
-			parts := strings.SplitN(outputLine, ":", 2)
-			if len(parts) != 2 {
-				if inDNSPrimary {
-					currentInterface.DNSBack = strings.TrimSpace(outputLine)
-					inDNSPrimary = false
+	if currentInterface != (IfconfigInterfaces{}) {
+		IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
+	}
+
+	hardwarePortList, err := runner.getAllHardwarePortList()
+
+	if err != nil {
+		return IfconfigInterfacesList
+	}
+
+	for index, ifconfigInterfaces := range IfconfigInterfacesList {
+		for _, hardwarePort := range hardwarePortList {
+			if ifconfigInterfaces.Name == hardwarePort.Device {
+				IfconfigInterfacesList[index].Description = hardwarePort.HardwarePort
+				isDHCP, primary, back, err := runner.getDNSServer(hardwarePort.HardwarePort)
+				if err != nil {
+					continue
 				}
-				continue
-			}
-			if inDNSPrimary {
-				inDNSPrimary = false
-			}
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			if strings.HasPrefix(key, "Physical Address") {
-				currentInterface.HardwareAddr = strings.ToUpper(strings.Replace(value, "-", ":", -1))
-			} else if strings.HasPrefix(key, "DHCP enabled") {
-				if value == "Yes" {
-					currentInterface.DHCPEnabled = true
-				}
-			} else if strings.HasPrefix(key, "IPv4 Address") || strings.HasPrefix(key, "IP Address") {
-				currentInterface.IPv4Address = strings.Replace(value, "(Preferred)", "", -1)
-			} else if strings.HasPrefix(key, "Subnet Prefix") || strings.HasPrefix(key, "Subnet Mask") {
-				currentInterface.SubnetPrefix = value
-			} else if strings.HasPrefix(key, "Default Gateway") {
-				currentInterface.DefaultGatewayAddress = value
-			} else if strings.HasPrefix(key, "DNS Servers") {
-				currentInterface.DNSPrimary = value
-				inDNSPrimary = true
-			} else if strings.HasPrefix(key, "Description") {
-				currentInterface.Description = value
-			} else if strings.HasPrefix(key, "Media State") {
-				if strings.Contains(value, "disconnected") {
-					currentInterface.Connected = false
+				if isDHCP {
+					IfconfigInterfacesList[index].DHCPEnabled = true
 				} else {
-					currentInterface.Connected = true
+					IfconfigInterfacesList[index].DNSPrimary = primary
+					IfconfigInterfacesList[index].DNSBack = back
 				}
 			}
 		}
-
-		if !strings.Contains(itemOut, "Media State") {
-			currentInterface.Connected = true
-		}
-
-		currentInterface.Type = typeName
-
-		if currentInterface != (IfconfigInterfaces{}) {
-			IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
-		}
-		cardIndex, cardType, typeName = minIndexAndCardType(repEthernet.FindStringSubmatchIndex(output), repEthernet, repWireless.FindStringSubmatchIndex(output), repWireless)
 	}
 
 	return IfconfigInterfacesList
