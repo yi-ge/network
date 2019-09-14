@@ -2,7 +2,6 @@ package network
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 )
 
@@ -232,7 +231,6 @@ func (runner *runner) getInfo(hardwarePort string) (info Info, err error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fmt.Println(line)
 		if strings.Contains(line, "IP address") && !strings.Contains(line, "IPv6 IP") {
 			info.IPAddress = strings.TrimSpace(strings.Split(line, ":")[1])
 		} else if strings.Contains(line, "Subnet mask") {
