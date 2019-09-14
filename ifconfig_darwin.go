@@ -83,9 +83,9 @@ func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 			if len(fs) > 3 {
 				currentInterface.SubnetPrefix = hex2dot(fs[3])
 			}
-			if len(fs) > 5 {
-				currentInterface.DefaultGatewayAddress = fs[5]
-			}
+			// if len(fs) > 5 {
+			// 	currentInterface.DefaultGatewayAddress = fs[5]
+			// }
 		} else if strings.Contains(line, "status:") {
 			if strings.Contains(line, "inactive") {
 				currentInterface.Connected = false
@@ -133,6 +133,11 @@ func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 				}
 				IfconfigInterfacesList[index].Type = theType
 				IfconfigInterfacesList[index].Mode = "Dedicated"
+
+				Info, err := runner.getInfo(hardwarePort.HardwarePort)
+				if err == nil {
+					IfconfigInterfacesList[index].DefaultGatewayAddress = Info.Router
+				}
 
 				adminState, err := runner.getNetworkServiceEnabled(hardwarePort.HardwarePort)
 				if err != nil {
