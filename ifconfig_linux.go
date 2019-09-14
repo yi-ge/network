@@ -133,8 +133,7 @@ func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 
 // EnabledNetworkInterfaceByIfconfig .
 func (runner *runner) EnabledNetworkInterfaceByIfconfig(interfaceName string) error {
-	command := "ifconfig " + interfaceName + " up"
-	_, err := runner.exec.Command(command).CombinedOutput()
+	_, err := runner.exec.Command("ifconfig", interfaceName+" up").CombinedOutput()
 	if err != nil {
 		return err
 	}
@@ -143,8 +142,7 @@ func (runner *runner) EnabledNetworkInterfaceByIfconfig(interfaceName string) er
 
 // DisableNetworkInterfaceByIfconfig .
 func (runner *runner) DisableNetworkInterfaceByIfconfig(interfaceName string) error {
-	command := "ifconfig " + interfaceName + " down"
-	_, err := runner.exec.Command(command).CombinedOutput()
+	_, err := runner.exec.Command("ifconfig", interfaceName+" down").CombinedOutput()
 	if err != nil {
 		return err
 	}
