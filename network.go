@@ -8,7 +8,7 @@ import (
 	utilexec "github.com/yi-ge/network/exec"
 )
 
-// Interfaces .
+// Interfaces - Network interface struct.
 type Interfaces struct {
 	Name                  string // e.g., "en0", "lo0", "eth0.100"
 	HardwareAddr          string // IEEE MAC-48, EUI-48 and EUI-64 form
@@ -31,7 +31,7 @@ type runner struct {
 	exec utilexec.Interface
 }
 
-// Interface .
+// Interface - Network manage interface.
 type Interface interface {
 	GetInterfacesList() ([]Interfaces, error)
 	EnabledNetworkInterface(interfaceName string) error
