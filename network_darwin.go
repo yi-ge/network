@@ -15,6 +15,7 @@ func (runner *runner) parseInterfacesList(interfacesList []Interfaces) []Interfa
 				interfacesList[inx].DefaultGatewayAddress = ipconfigInterfaces.DefaultGatewayAddress
 				interfacesList[inx].DNSPrimary = ipconfigInterfaces.DNSPrimary
 				interfacesList[inx].DNSBack = ipconfigInterfaces.DNSBack
+				interfacesList[inx].DHCPEnabled = ipconfigInterfaces.DHCPEnabled
 				interfacesList[inx].Mode = ipconfigInterfaces.Mode
 				interfacesList[inx].Description = ipconfigInterfaces.Description
 				interfacesList[inx].Connected = ipconfigInterfaces.Connected

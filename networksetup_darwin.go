@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// HardwarePort .
 type HardwarePort struct {
 	HardwarePort    string
 	Device          string
@@ -165,7 +166,7 @@ func (runner *runner) getDNSServer(hardwarePort string) (DHCP bool, primary stri
 
 	output := string(out[:])
 
-	if strings.Contains(output, "aren't") {
+	if strings.Contains(output, "t any DNS Servers") {
 		return true, "", "", nil
 	}
 
@@ -175,4 +176,20 @@ func (runner *runner) getDNSServer(hardwarePort string) (DHCP bool, primary stri
 	back = outputLines[1]
 
 	return false, primary, back, nil
+}
+
+func (runner *runner) getNetworkServiceEnabled(hardwarePort string) (string, error) {
+	args := []string{
+		"-getnetworkserviceenabled",
+		hardwarePort,
+	}
+
+	out, err := runner.exec.Command("networksetup", args...).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	output := string(out[:])
+
+	return output, nil
 }

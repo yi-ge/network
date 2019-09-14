@@ -43,6 +43,16 @@ func (runner *runner) getIfconfigOutPut() (string, error) {
 	return string(out[:]), nil
 }
 
+func nameInIfconfigInterfacesList(name string, ifconfigInterfacesList []IfconfigInterfaces) bool {
+	for _, ifconfigInterfaces := range ifconfigInterfacesList {
+		if ifconfigInterfaces.Name == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 	var (
 		IfconfigInterfacesList []IfconfigInterfaces
@@ -87,9 +97,7 @@ func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 		}
 	}
 
-	currentInterface.Type = "Wired"
-
-	if currentInterface != (IfconfigInterfaces{}) {
+	if currentInterface.Name != "" {
 		IfconfigInterfacesList = append(IfconfigInterfacesList, currentInterface)
 	}
 
@@ -99,19 +107,50 @@ func (runner *runner) parseIfconfig(str string) []IfconfigInterfaces {
 		return IfconfigInterfacesList
 	}
 
-	for index, ifconfigInterfaces := range IfconfigInterfacesList {
-		for _, hardwarePort := range hardwarePortList {
+	for _, hardwarePort := range hardwarePortList {
+		if !nameInIfconfigInterfacesList(hardwarePort.Device, IfconfigInterfacesList) {
+			theType := "Wired"
+			if strings.Contains(hardwarePort.HardwarePort, "Wi-Fi") {
+				theType = "Wi-Fi"
+			}
+			ifconfigInterfaces := IfconfigInterfaces{
+				Name:         hardwarePort.Device,
+				Description:  hardwarePort.HardwarePort,
+				HardwareAddr: hardwarePort.EthernetAddress,
+				Connected:    false,
+				Type:         theType,
+			}
+			IfconfigInterfacesList = append(IfconfigInterfacesList, ifconfigInterfaces)
+		}
+
+		for index, ifconfigInterfaces := range IfconfigInterfacesList {
 			if ifconfigInterfaces.Name == hardwarePort.Device {
 				IfconfigInterfacesList[index].Description = hardwarePort.HardwarePort
+
+				theType := "Wired"
+				if strings.Contains(hardwarePort.HardwarePort, "Wi-Fi") {
+					theType = "Wi-Fi"
+				}
+				IfconfigInterfacesList[index].Type = theType
+				IfconfigInterfacesList[index].Mode = "Dedicated"
+
+				adminState, err := runner.getNetworkServiceEnabled(hardwarePort.HardwarePort)
+				if err != nil {
+					IfconfigInterfacesList[index].AdminState = "Disabled"
+				} else {
+					IfconfigInterfacesList[index].AdminState = strings.Replace(adminState, "\n", "", -1)
+				}
+
 				isDHCP, primary, back, err := runner.getDNSServer(hardwarePort.HardwarePort)
 				if err != nil {
-					continue
-				}
-				if isDHCP {
-					IfconfigInterfacesList[index].DHCPEnabled = true
+					IfconfigInterfacesList[index].DHCPEnabled = false
 				} else {
-					IfconfigInterfacesList[index].DNSPrimary = primary
-					IfconfigInterfacesList[index].DNSBack = back
+					if isDHCP {
+						IfconfigInterfacesList[index].DHCPEnabled = true
+					} else {
+						IfconfigInterfacesList[index].DNSPrimary = primary
+						IfconfigInterfacesList[index].DNSBack = back
+					}
 				}
 			}
 		}
