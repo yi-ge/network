@@ -83,6 +83,7 @@ func (cmd *cmdWrapper) SetStderr(out io.Writer) {
 
 // CombinedOutput is part of the Cmd interface.
 func (cmd *cmdWrapper) CombinedOutput() ([]byte, error) {
+	cmd.Env = os.Environ()
 	out, err := (*osexec.Cmd)(cmd).CombinedOutput()
 	if err != nil {
 		return out, handleError(err)
@@ -97,6 +98,7 @@ func (executor *executor) Command(cmd string, args ...string) Cmd {
 }
 
 func (cmd *cmdWrapper) Output() ([]byte, error) {
+	cmd.Env = os.Environ()
 	out, err := (*osexec.Cmd)(cmd).Output()
 	if err != nil {
 		return out, handleError(err)

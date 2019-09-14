@@ -218,13 +218,35 @@ func parseDarwin(output string) (wifiList []Wifi, err error) {
 func parseLinux(output string) (wifiList []Wifi, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	w := Wifi{}
+	channelInfo := ChannelInfo{}
 	wifiList = []Wifi{}
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.Contains(line, "ESSID") {
+		if strings.Contains(line, "Address") {
 			fs := strings.Split(line, ":")
-			w.SSID = fs[2]
+			bssid := strings.TrimSpace(strings.ToLower(fs[2]))
+			line = scanner.Text()
+			if strings.Contains(line, "ESSID") {
+				if channelInfo.BSSID != "" {
+					inArray, index := ssidInArray(wifiList, line)
+					if inArray {
+						wifiList[index].ChannelList = append(wifiList[index].ChannelList, channelInfo)
+					} else {
+						w.ChannelList = append(w.ChannelList, channelInfo)
+						wifiList = append(wifiList, w)
+						w = Wifi{}
+					}
+
+					channelInfo = ChannelInfo{}
+				}
+
+				fs := strings.Split(line, ":")
+				w.SSID = fs[2]
+				channelInfo.BSSID = bssid
+			} else {
+				continue
+			}
 		} else if strings.Contains(line, "Mode") {
 			fs := strings.Split(line, ":")
 			if fs[2] == "Managed" {
@@ -250,64 +272,37 @@ func parseLinux(output string) (wifiList []Wifi, err error) {
 				w.Encryption = "None"
 				w.Authentication = "None"
 			}
-		} else if strings.Contains(line, "Address") {
-			if channelInfo.BSSID != "" && channelInfo.RSSI != 0 {
-				channelInfoList = append(channelInfoList, channelInfo)
-				channelInfo = ChannelInfo{}
-			}
-			fs := strings.Fields(line)
-			if len(fs) == 4 {
-				channelInfo.BSSID = fs[3]
-			}
-		} else if strings.Contains(line, "Signal") {
-			if strings.Contains(line, "%") {
-				fs := strings.Fields(line)
-				if len(fs) == 3 {
-					channelInfo.Signal = fs[2]
-					channelInfo.RSSI, err = strconv.Atoi(strings.Replace(fs[2], "%", "", 1))
-					if err != nil {
-						continue
-					}
-					channelInfo.RSSI = (channelInfo.RSSI / 2) - 100
-				}
-			}
-		} else if strings.Contains(line, "Radio type") {
-			fs := strings.Fields(line)
-			if len(fs) == 4 {
-				channelInfo.RadioType = fs[3]
-			}
-		} else if strings.Contains(line, "Channel") {
-			fs := strings.Fields(line)
-			if len(fs) == 3 {
-				channelInfo.Channel = fs[2]
-			}
-		}
-
-		if w.SSID == "" {
-			if strings.Contains(line, "Address") {
-				fs := strings.Fields(line)
-				if len(fs) == 5 {
-					w.SSID = strings.ToLower(fs[4])
-				}
-			} else {
+		} else if strings.Contains(line, "Signal level=") {
+			signal := strings.Split(strings.Split(strings.Split(line, "level=")[1], "/")[0], " dB")[0]
+			channelInfo.Signal = signal
+			level, errParse := strconv.Atoi(signal)
+			if errParse != nil {
 				continue
 			}
-		} else {
-			if strings.Contains(line, "Signal level=") {
-				level, errParse := strconv.Atoi(strings.Split(strings.Split(strings.Split(line, "level=")[1], "/")[0], " dB")[0])
-				if errParse != nil {
-					continue
-				}
-				if level > 0 {
-					level = (level / 2) - 100
-				}
-				w.RSSI = level
+			if level > 0 {
+				level = (level / 2) - 100
 			}
+			channelInfo.RSSI = level
+		} else if strings.Contains(line, "Frequency=5") {
+			channelInfo.RadioType = "802.11ac"
+		} else if strings.Contains(line, "Frequency=2") {
+			channelInfo.RadioType = "802.11n"
+		} else if strings.Contains(line, "(Channel") {
+			channelInfo.Channel = strings.TrimSpace(strings.Replace(strings.Split(line, "(Channel")[2], ")", "", -1))
 		}
-		if w.SSID != "" && w.RSSI != 0 {
+	}
+
+	if channelInfo.BSSID != "" {
+		inArray, index := ssidInArray(wifiList, w.SSID)
+		if inArray {
+			wifiList[index].ChannelList = append(wifiList[index].ChannelList, channelInfo)
+		} else {
+			w.ChannelList = append(w.ChannelList, channelInfo)
 			wifiList = append(wifiList, w)
 			w = Wifi{}
 		}
+
+		channelInfo = ChannelInfo{}
 	}
-	return
+	return wifiList, nil
 }
