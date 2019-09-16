@@ -6,3 +6,8 @@ package exec
 func parseCommand(cmd string, args ...string) (string, []string) {
 	return cmd, args
 }
+
+// SetSystemOptions .
+func SetSystemOptions(cmd *cmdWrapper) {
+	return
+}

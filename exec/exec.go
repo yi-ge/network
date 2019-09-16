@@ -81,9 +81,14 @@ func (cmd *cmdWrapper) SetStderr(out io.Writer) {
 	cmd.Stderr = out
 }
 
+func (cmd *cmdWrapper) SetSystemOptions() {
+	SetSystemOptions(cmd)
+}
+
 // CombinedOutput is part of the Cmd interface.
 func (cmd *cmdWrapper) CombinedOutput() ([]byte, error) {
 	cmd.Env = os.Environ()
+	cmd.SetSystemOptions()
 	out, err := (*osexec.Cmd)(cmd).CombinedOutput()
 	if err != nil {
 		return out, handleError(err)
