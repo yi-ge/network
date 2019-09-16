@@ -112,6 +112,7 @@ func (cmd *cmdWrapper) Output() ([]byte, error) {
 }
 
 func (cmd *cmdWrapper) Start() error {
+	cmd.SetSystemOptions()
 	err := (*osexec.Cmd)(cmd).Start()
 	return err
 }
